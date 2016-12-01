@@ -10,7 +10,8 @@ if __name__ == "__main__":
         counter += 1
         bot.log("Query " + str(counter))
         bot.run()
-        time.sleep(60)
+        bot.log("Sleeping for 5 min...")
+        time.sleep(300)
     # api.retweet(tweet.id)
     # log("Retweeted: " + tweet.text)
     # tweet_text = create_tweet()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import json
 import tweepy
 from secrets import *
 from time import gmtime, strftime
@@ -36,6 +37,7 @@ class Bot(object):
         lowest_id = float("Inf")
         highest_id = 0
         valid_tweets = list()
+        count = 0
 
         for i in range(iterations):
             try:
@@ -64,16 +66,23 @@ class Bot(object):
                             # not a retweet
                             # print(tweet.text.encode('utf-8'))
                             try:
-                                media_type = tweet.extended_entities['media'][0]['type']
-                                if media_type == 'animated_gif':
-                                    valid_tweets.append(tweet)
+                                for media in tweet.extended_entities['media']:
+                                    if media['type'] == 'animated_gif':
+                                        h = media['sizes']['large']['h']
+                                        w = media['sizes']['large']['w']
+                                        if(h*w > 50000):
+                                            # gif is not crappy and small
+                                            valid_tweets.append(tweet)
                             except AttributeError:
                                 pass
                                 # Doesn't have extended_entities
+                count += len(results)
                 if len(results) < 100:
                     # we've reached tweets that we've seen before
                     break
         self.most_recent_id = max(highest_id, self.most_recent_id)
+        self.log("Processed " + str(count) + " tweets, "
+                 "of which " + str(len(valid_tweets)) + " are valid.")
         return valid_tweets
 
     def tweet(self, api, text):
@@ -92,6 +101,9 @@ class Bot(object):
         try:
             self.api.retweet(tweet.id)
             self.log("Retweeted: " + tweet.text)
+
+            self.api.create_friendship(tweet.user.id)
+            self.log("Followed : " + tweet.user.name)
         except tweepy.error.TweepError as e:
             # Probably already retweeted
             self.log(e.reason)
@@ -101,14 +113,15 @@ class Bot(object):
         """Log message to logfile."""
         path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         with open(os.path.join(path, logfile_name), 'a+') as f:
-            t = strftime("%d %b %Y %H:%M:%S", gmtime())
-            string = message if type(message) is str else message.decode('utf-8')
+            t = strftime("[%d %b %Y %H:%M:%S]", gmtime())
+            string = message if type(message) is str else message.encode('utf-8')
             f.write("\n" + t + " " + string)
 
     def run(self):
         self.log("Finding tweets with #indiedev or #gamedev...")
         retweetable = self.find_tweets(
-            '#indiedev OR #gamedev OR #procjam OR #pixelart', 5)
+            "#indiedev OR #gamedev OR #procjam OR #pixelart "
+            "-RT -buy -AssetStore filter:media", 5)
 
         for tweet in retweetable:
             if tweet.id not in self.history:
