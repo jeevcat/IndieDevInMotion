@@ -54,7 +54,7 @@ class Bot(object):
                                               since_id=self.most_recent_id,
                                               max_id=lowest_id - 1)
             except tweepy.error.TweepError as e:
-                self.log(e.message)
+                self.log(e.reason)
             else:
                 for tweet in results:
                     if tweet.id not in self.history:
@@ -83,7 +83,7 @@ class Bot(object):
         try:
             self.api.update_status(text)
         except tweepy.error.TweepError as e:
-            self.log(e.message)
+            self.log(e.reason)
         else:
             self.log("Tweeted: " + text)
 
@@ -94,7 +94,7 @@ class Bot(object):
             self.log("Retweeted: " + tweet.text)
         except tweepy.error.TweepError as e:
             # Probably already retweeted
-            self.log(e.message[0]['message'])
+            self.log(e.reason)
         self.history.append(tweet.id)
 
     def log(self, message):

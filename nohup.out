@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "./start.py", line 4, in <module>
+    from bot import Bot
+  File "/home/ubuntu/IndieDevInMotion/bot.py", line 4, in <module>
+    import tweepy
+ImportError: No module named tweepy
