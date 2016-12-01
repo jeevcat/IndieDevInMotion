@@ -102,7 +102,8 @@ class Bot(object):
         path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         with open(os.path.join(path, logfile_name), 'a+') as f:
             t = strftime("%d %b %Y %H:%M:%S", gmtime())
-            f.write("\n" + t + " " + message.decode('utf-8'))
+            string = message if type(message)=='str' else message.decode('utf-8')
+            f.write("\n" + t + " " + string)
 
     def run(self):
         self.log("Finding tweets with #indiedev or #gamedev...")
