@@ -2,6 +2,8 @@
 
 import os
 import json
+import time
+import datetime
 import tweepy
 from secrets import *
 from time import gmtime, strftime
@@ -73,6 +75,9 @@ class Bot(object):
                                         if(h*w > 50000):
                                             # gif is not crappy and small
                                             valid_tweets.append(tweet)
+                                        if(h*w > 200000):
+                                            # gif is especially nice
+                                            self.like(tweet)
                             except AttributeError:
                                 pass
                                 # Doesn't have extended_entities
@@ -109,6 +114,38 @@ class Bot(object):
             self.log(e.reason)
         self.history.append(tweet.id)
 
+    def like(self, tweet):
+        try:
+            self.api.create_favorite(tweet.id)
+            self.log("Liked: " + tweet.text)
+        except tweepy.error.TweepError as e:
+            # Probably already liked
+            self.log(e.reason)
+
+    def unfollow_inactive(self):
+        for friend in self.limit_handled(
+                tweepy.Cursor(self.api.friends, count=200).items()):
+            if not hasattr(friend, 'status'):
+                continue
+            if not hasattr(friend.status, 'created_at'):
+                continue
+            date = friend.status.created_at
+            days_ago = (datetime.datetime.now() - date).days
+            if days_ago > 7:
+                self.log(friend.screen_name + "'s last tweet was " +
+                         str(days_ago) + " days ago. Unfollowing.")
+                self.api.destroy_friendship(friend.id)
+
+    def limit_handled(self, cursor):
+        """Wrap a cursor with this function to auto sleep
+           for 15 min if rate limit reached"""
+        while True:
+            try:
+                yield cursor.next()
+            except tweepy.RateLimitError:
+                self.log("Rate limit reached. Skipping unfollow_inactive.")
+                return
+
     def log(self, message):
         """Log message to logfile."""
         path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -118,6 +155,8 @@ class Bot(object):
             f.write("\n" + t + " " + string)
 
     def run(self):
+        self.unfollow_inactive()
+
         self.log("Finding tweets with #indiedev or #gamedev...")
         retweetable = self.find_tweets(
             "#indiedev OR #gamedev OR #procjam OR #pixelart "
@@ -126,3 +165,6 @@ class Bot(object):
         for tweet in retweetable:
             if tweet.id not in self.history:
                 self.retweet(tweet)
+            else:
+                self.log("Not retweeting as retweet is in history: " +
+                         len(history))
