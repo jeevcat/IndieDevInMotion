@@ -145,6 +145,9 @@ class Bot(object):
             except tweepy.RateLimitError:
                 self.log("Rate limit reached. Skipping unfollow_inactive.")
                 return
+            except tweepy.error.TweepError:
+                self.log("Read timeout. Skipping...")
+                return
 
     def log(self, message):
         """Log message to logfile."""
